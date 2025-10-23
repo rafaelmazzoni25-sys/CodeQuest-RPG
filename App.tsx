@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import type { PlayerClass, LearningPath, GameStage, Stats, Lesson } from './types';
+import type { PlayerClass, LearningPath, GameStage, Stats, Lesson, CompletedQuest } from './types';
 import { PLAYER_CLASSES, LEARNING_PATHS, XP_PER_LEVEL, POINTS_PER_LEVEL } from './constants';
 import { generateLesson, evaluateCode } from './services/geminiService';
 
@@ -55,6 +54,7 @@ export default function App() {
   const [level, setLevel] = useState(1);
   const [xp, setXp] = useState(0);
   const [availablePoints, setAvailablePoints] = useState(0);
+  const [completedQuests, setCompletedQuests] = useState<CompletedQuest[]>([]);
 
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [userCode, setUserCode] = useState('');
@@ -96,6 +96,13 @@ export default function App() {
 
     if (result.isCorrect) {
         const xpGained = 20 + (playerStats?.lore || 0);
+        
+        const newQuest: CompletedQuest = {
+            title: currentLesson.title,
+            xpGained: xpGained,
+        };
+        setCompletedQuests(prev => [...prev, newQuest]);
+
         const newXp = xp + xpGained;
         if (newXp >= XP_PER_LEVEL) {
             setLevel(level + 1);
@@ -139,7 +146,7 @@ export default function App() {
       case 'learning':
          return (
             <div className="grid lg:grid-cols-3 gap-6 h-full">
-                <CharacterSheet stats={playerStats} level={level} xp={xp} playerClass={playerClass} />
+                <CharacterSheet stats={playerStats} level={level} xp={xp} playerClass={playerClass} completedQuests={completedQuests} />
                 <main className="lg:col-span-2 bg-gray-800/50 p-6 rounded-lg border border-gray-700 backdrop-blur-sm flex flex-col">
                     {isLoading && !currentLesson && <div className="text-center p-10"><h2 className="text-2xl animate-pulse">Summoning a new quest...</h2></div>}
                     {currentLesson && (
@@ -218,9 +225,10 @@ interface CharacterSheetProps {
     level: number;
     xp: number;
     playerClass: PlayerClass | null;
+    completedQuests: CompletedQuest[];
 }
 
-const CharacterSheet: React.FC<CharacterSheetProps> = ({ stats, level, xp, playerClass }) => {
+const CharacterSheet: React.FC<CharacterSheetProps> = ({ stats, level, xp, playerClass, completedQuests }) => {
     if (!stats || !playerClass) return null;
 
     const xpPercentage = (xp / XP_PER_LEVEL) * 100;
@@ -245,6 +253,20 @@ const CharacterSheet: React.FC<CharacterSheetProps> = ({ stats, level, xp, playe
                     </li>
                 ))}
             </ul>
+
+            <h3 className="mt-6 font-bold border-b border-gray-600 pb-1 mb-3 text-lg text-gray-300">Quest Log</h3>
+            {completedQuests.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    {completedQuests.slice().reverse().map((quest, index) => (
+                        <div key={index} className="text-sm p-2 bg-gray-700/50 rounded-md">
+                            <p className="font-bold text-amber-300">{quest.title}</p>
+                            <p className="text-xs text-gray-400">Reward: {quest.xpGained} XP</p>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-gray-500 italic">No quests completed yet.</p>
+            )}
         </aside>
     );
 };

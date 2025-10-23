@@ -1,4 +1,3 @@
-
 import type { JSX } from 'react';
 
 export interface Stats {
@@ -35,6 +34,11 @@ export interface Lesson {
 export interface EvaluationResult {
   isCorrect: boolean;
   feedback: string;
+}
+
+export interface CompletedQuest {
+  title: string;
+  xpGained: number;
 }
 
 export type GameStage = 'classSelection' | 'pathSelection' | 'learning' | 'levelUp';
